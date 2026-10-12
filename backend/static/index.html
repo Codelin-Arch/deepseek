@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepSeek Code Search</title>
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        background: #0b1020;
+        color: #e5ecff;
+        margin: 0;
+        padding: 2rem;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        border: 1px solid #1f2d50;
+        border-radius: 18px;
+        padding: 1.5rem;
+        background: rgba(18, 28, 48, 0.8);
+      }
+      input, button {
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #2f486d;
+        font-size: 1rem;
+      }
+      input {
+        width: 100%;
+        background: #0f172a;
+        color: white;
+      }
+      button {
+        background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+        color: white;
+        cursor: pointer;
+      }
+      .panel {
+        margin-top: 1.5rem;
+        border: 1px solid #1f2d50;
+        border-radius: 16px;
+        padding: 1rem;
+        background: rgba(15, 24, 39, 0.8);
+      }
+      .result {
+        padding: 1rem;
+        border: 1px solid #233656;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+      }
+      .meta {
+        font-size: 0.8rem;
+        color: #9ab0d8;
+      }
+      .snippet {
+        white-space: pre-wrap;
+        font-family: ui-monospace, monospace;
+        background: #09111d;
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-top: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="hero">
+        <div>
+          <h1>DeepSeek-style Code Intelligence</h1>
+          <p>Hybrid retrieval over GitHub code and documentation.</p>
+        </div>
+        <div style="min-width: 280px;">
+          <label for="repoInput">Repository URL</label>
+          <input id="repoInput" value="https://github.com/tiangolo/fastapi" />
+          <button id="indexBtn" style="margin-top: 0.8rem; width: 100%;">Index repo</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <input id="queryInput" placeholder="Search code: 'how does dependency injection work?'

@@ -1,0 +1,86 @@
+import re
+from typing import Any, Dict, List
+
+import httpx
+from meilisearch import Client
+
+from app.config import MEILI_URL, MEILI_MASTER_KEY, MEILI_INDEX
+from app.embeddings import embedder
+from app.vector_store import vector_store
+
+
+class LexicalStore:
+    def __init__(self):
+        self.client = Client(MEILI_URL, MEILI_MASTER_KEY)
+        self.index_name = MEILI_INDEX
+        self.index = self.client.index(self.index_name)
+
+    def create_or_update(self):
+        try:
+            self.index.get_primary_key()
+        except Exception:
+            self.index.create(
+                {'primaryKey': 'id'}
+            )
+
+    def upsert(self, docs: List[Dict[str, Any]]) -> None:
+        self.create_or_update()
+        self.index.add_documents(docs)
+
+    def query(self, q: str, limit: int = 8):
+        return self.index.search(q, {"limit": limit})
+
+
+lexical_store = LexicalStore()
+
+
+def build_lexical_documents(repo_name: str, repo_path: str, chunk: str, chunk_index: int, file_path: str) -> Dict[str, Any]:
+    return {
+        "id": f"{repo_name}:{file_path}:{chunk_index}",
+        "repo": repo_name,
+        "path": file_path,
+        "chunk_index": chunk_index,
+        "content": chunk,
+    }
+
+
+def hybrid_search(query: str, repo: str | None = None, limit: int = 8):
+    vector = embedder.embed(query)
+    vector_hits = vector_store.search(vector, limit=limit, filter_payload={"repo": repo} if repo else None)
+
+    lexical_hits = []
+    try:
+        lexical_hits = lexical_store.query(query, limit=limit)["hits"]
+    except Exception:
+        lexical_hits = []
+
+    combined: List[Dict[str, Any]] = []
+    seen = set()
+    for hit in vector_hits:
+        payload = hit.payload or {}
+        key = f"{payload.get('repo')}::{payload.get('path')}::{payload.get('chunk_index')}"
+        if key not in seen:
+            seen.add(key)
+            combined.append({
+                "repo": payload.get("repo"),
+                "path": payload.get("path"),
+                "language": payload.get("language"),
+                "content": payload.get("content"),
+                "score": float(hit.score or 0),
+                "source": "vector",
+            })
+
+    for hit in lexical_hits:
+        key = f"{hit.get('repo')}::{hit.get('path')}::{hit.get('chunk_index')}"
+        if key in seen:
+            continue
+        seen.add(key)
+        combined.append({
+            "repo": hit.get("repo"),
+            "path": hit.get("path"),
+            "content": hit.get("content"),
+            "score": 0.6,
+            "source": "lexical",
+        })
+
+    return combined[:limit]
